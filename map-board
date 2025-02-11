@@ -69,29 +69,40 @@
         const board = document.getElementById("board");
         const castleMenu = document.getElementById("castle-menu");
         let longPressTimer;
+        let longPressActive = false;
 
         function selectCastleType(pt) {
             selectedCastleType = pt;
             castleMenu.style.display = 'none';
+            longPressActive = false;
         }
 
         board.addEventListener("touchstart", (event) => {
             longPressTimer = setTimeout(() => {
                 castleMenu.style.display = 'block';
-            }, 500); // 長押しでメニュー表示
+                longPressActive = true;
+            }, 500);
         });
 
-        board.addEventListener("touchend", () => {
+        board.addEventListener("touchend", (event) => {
             clearTimeout(longPressTimer);
+            if (!longPressActive && selectedCastleType) {
+                placeCastle(event.touches[0].clientX, event.touches[0].clientY);
+            }
         });
 
         board.addEventListener("click", (event) => {
-            if (!selectedCastleType) return;
+            if (selectedCastleType) {
+                placeCastle(event.clientX, event.clientY);
+            }
+        });
+
+        function placeCastle(x, y) {
             const castle = document.createElement("div");
             castle.className = "castle";
             castle.dataset.pt = selectedCastleType;
-            castle.style.left = `${event.clientX - 20}px`;
-            castle.style.top = `${event.clientY - 20}px`;
+            castle.style.left = `${x - 20}px`;
+            castle.style.top = `${y - 20}px`;
             castle.innerText = selectedCastleType;
             castle.draggable = true;
 
@@ -115,8 +126,9 @@
                 e.preventDefault();
                 board.removeChild(castle);
             });
+
             board.appendChild(castle);
-        });
+        }
     </script>
 </body>
 </html>
