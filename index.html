@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>キングダム乱 争覇戦 作戦ボード</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f8f8f8;
+        }
+        #board {
+            width: 3000px;
+            height: 2000px;
+            background-color: #ffffff;
+            position: absolute;
+            transform-origin: 0 0;
+        }
+        .castle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: absolute;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border: 2px solid black;
+        }
+        .castle[data-pt="1000"] { background-color: blue; }
+        .castle[data-pt="1600"] { background-color: green; }
+        .castle[data-pt="2700"] { background-color: red; }
+    </style>
+</head>
+<body>
+    <div id="board"></div>
+    <script>
+        let scale = 1;
+        const board = document.getElementById("board");
+
+        // ズーム・スクロール機能
+        let isPanning = false;
+        let startX, startY;
+
+        document.addEventListener("wheel", (event) => {
+            event.preventDefault();
+            const zoomIntensity = 0.1;
+            scale += event.deltaY * -zoomIntensity;
+            scale = Math.min(Math.max(0.5, scale), 2);
+            board.style.transform = `scale(${scale})`;
+        });
+
+        document.addEventListener("mousedown", (event) => {
+            if (event.button === 1) { // 中クリックでスクロール
+                isPanning = true;
+                startX = event.clientX - board.offsetLeft;
+                startY = event.clientY - board.offsetTop;
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            isPanning = false;
+        });
+
+        document.addEventListener("mousemove", (event) => {
+            if (isPanning) {
+                board.style.left = `${event.clientX - startX}px`;
+                board.style.top = `${event.clientY - startY}px`;
+            }
+        });
+
+        // 城の追加
+        board.addEventListener("dblclick", (event) => {
+            const ptValues = [1000, 1600, 2700];
+            const pt = ptValues[Math.floor(Math.random() * ptValues.length)];
+            const castle = document.createElement("div");
+            castle.className = "castle";
+            castle.dataset.pt = pt;
+            castle.style.left = `${event.clientX - 20}px`;
+            castle.style.top = `${event.clientY - 20}px`;
+            castle.innerText = pt;
+            castle.draggable = true;
+
+            // ドラッグ移動
+            castle.addEventListener("dragstart", (e) => {
+                e.dataTransfer.setData("text/plain", JSON.stringify({ x: e.clientX, y: e.clientY }));
+            });
+
+            castle.addEventListener("dragend", (e) => {
+                castle.style.left = `${e.clientX - 20}px`;
+                castle.style.top = `${e.clientY - 20}px`;
+            });
+
+            // 右クリックで削除
+            castle.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                board.removeChild(castle);
+            });
+
+            board.appendChild(castle);
+        });
+    </script>
+</body>
+</html>
