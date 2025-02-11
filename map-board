@@ -10,27 +10,26 @@
             overflow: hidden;
             background-color: #f8f8f8;
             touch-action: manipulation;
-        }
-        #board-container {
-            width: 100vw;
-            height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            height: 100vh;
         }
-        #board {
-            width: 3000px;
-            height: 2000px;
+        #board-container {
+            width: 90vw;
+            height: 75vh;
             background-color: #ffffff;
             border: 5px solid black;
-            position: absolute;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .castle {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            position: absolute;
-            cursor: grab;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -38,97 +37,73 @@
             font-weight: bold;
             border: 2px solid black;
             user-select: none;
+            position: absolute;
         }
         .castle[data-pt="1000"] { background-color: blue; }
         .castle[data-pt="1600"] { background-color: green; }
         .castle[data-pt="2700"] { background-color: red; }
         #castle-menu {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
         }
+        .castle-option {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border: 2px solid black;
+            border-radius: 50%;
+            cursor: grab;
+        }
+        .castle-option[data-pt="1000"] { background-color: blue; }
+        .castle-option[data-pt="1600"] { background-color: green; }
+        .castle-option[data-pt="2700"] { background-color: red; }
     </style>
 </head>
 <body>
+    <div id="board-container"></div>
     <div id="castle-menu">
-        <button onclick="selectCastleType(1000)">1000pt 城</button>
-        <button onclick="selectCastleType(1600)">1600pt 城</button>
-        <button onclick="selectCastleType(2700)">2700pt 城</button>
-    </div>
-    <div id="board-container">
-        <div id="board"></div>
+        <div class="castle-option" data-pt="1000" draggable="true">1000</div>
+        <div class="castle-option" data-pt="1600" draggable="true">1600</div>
+        <div class="castle-option" data-pt="2700" draggable="true">2700</div>
     </div>
     <script>
-        let selectedCastleType = null;
-        const board = document.getElementById("board");
-        const castleMenu = document.getElementById("castle-menu");
-        let longPressTimer;
-        let longPressActive = false;
+        const board = document.getElementById("board-container");
+        const castleOptions = document.querySelectorAll(".castle-option");
 
-        function selectCastleType(pt) {
-            selectedCastleType = pt;
-            castleMenu.style.display = 'none';
-            longPressActive = false;
-        }
-
-        board.addEventListener("touchstart", (event) => {
-            longPressTimer = setTimeout(() => {
-                castleMenu.style.display = 'block';
-                longPressActive = true;
-            }, 500);
+        castleOptions.forEach(option => {
+            option.addEventListener("dragstart", (event) => {
+                event.dataTransfer.setData("castle-pt", event.target.dataset.pt);
+            });
         });
 
-        board.addEventListener("touchend", (event) => {
-            clearTimeout(longPressTimer);
-            if (!longPressActive && selectedCastleType) {
-                placeCastle(event.touches[0].clientX, event.touches[0].clientY);
-            }
+        board.addEventListener("dragover", (event) => {
+            event.preventDefault();
         });
 
-        board.addEventListener("click", (event) => {
-            if (selectedCastleType) {
-                placeCastle(event.clientX, event.clientY);
-            }
-        });
+        board.addEventListener("drop", (event) => {
+            event.preventDefault();
+            const pt = event.dataTransfer.getData("castle-pt");
+            if (!pt) return;
 
-        function placeCastle(x, y) {
             const castle = document.createElement("div");
             castle.className = "castle";
-            castle.dataset.pt = selectedCastleType;
-            castle.style.left = `${x - 20}px`;
-            castle.style.top = `${y - 20}px`;
-            castle.innerText = selectedCastleType;
+            castle.dataset.pt = pt;
+            castle.style.left = `${event.clientX - board.offsetLeft - 25}px`;
+            castle.style.top = `${event.clientY - board.offsetTop - 25}px`;
+            castle.innerText = pt;
             castle.draggable = true;
 
-            castle.addEventListener("mousedown", (e) => {
-                const offsetX = e.clientX - castle.offsetLeft;
-                const offsetY = e.clientY - castle.offsetTop;
-                function moveAt(pageX, pageY) {
-                    castle.style.left = `${pageX - offsetX}px`;
-                    castle.style.top = `${pageY - offsetY}px`;
-                }
-                function onMouseMove(event) {
-                    moveAt(event.pageX, event.pageY);
-                }
-                document.addEventListener("mousemove", onMouseMove);
-                document.addEventListener("mouseup", () => {
-                    document.removeEventListener("mousemove", onMouseMove);
-                }, { once: true });
-            });
-
-            castle.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                board.removeChild(castle);
+            castle.addEventListener("dragstart", (e) => {
+                e.dataTransfer.setData("move-castle", JSON.stringify({ pt, left: castle.style.left, top: castle.style.top }));
             });
 
             board.appendChild(castle);
-        }
+        });
     </script>
 </body>
 </html>
